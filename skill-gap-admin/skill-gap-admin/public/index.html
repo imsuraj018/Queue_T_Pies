@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Institute Skill-Gap Admin</title>
+<style>
+:root{--bg:#f6f7f9;--surface:#fff;--ink:#1b1f24;--muted:#6b7280;--line:#e3e6eb;--accent:#3b5bdb;--ok:#2f9e44;--warn:#e67700;--bad:#e03131;--chip:#eef2ff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1115;--surface:#171a21;--ink:#e6e8ec;--muted:#9aa3af;--line:#262b35;--accent:#748ffc;--chip:#1f2540;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1115;--surface:#171a21;--ink:#e6e8ec;--muted:#9aa3af;--line:#262b35;--accent:#748ffc;--chip:#1f2540;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+nav{background:var(--surface);border-right:1px solid var(--line);padding:18px 12px}
+nav h1{font-size:15px;margin:0 8px 16px}
+nav button{display:flex;width:100%;justify-content:space-between;align-items:center;background:none;border:0;color:var(--ink);padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;font:inherit}
+nav button.on,nav button:hover{background:var(--chip);color:var(--accent)}
+nav .count{font-size:12px;color:var(--muted)}
+main{padding:22px 26px;overflow-x:auto}
+h2{font-size:20px;margin:0 0 4px}
+.sub{color:var(--muted);margin-bottom:18px}
+.note{background:var(--chip);border-radius:8px;padding:10px 12px;color:var(--muted);font-size:13px;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card .n{font-size:24px;font-weight:600}
+.card .l{color:var(--muted);font-size:12px}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:500;background:var(--bg)}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--chip)}
+.chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;margin:1px 3px 1px 0;border:1px solid var(--line)}
+.D{background:#d3f9d8;color:#1e5b2a;border-color:transparent}
+.P{background:#fff3bf;color:#7a5200;border-color:transparent}
+.N{background:#ffe3e3;color:#8a1c1c;border-color:transparent}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .D{background:#1d3b25;color:#b2f2bb}:root:not([data-theme="light"]) .P{background:#3d3412;color:#ffec99}:root:not([data-theme="light"]) .N{background:#3f1d1d;color:#ffc9c9}}
+:root[data-theme="dark"] .D{background:#1d3b25;color:#b2f2bb}:root[data-theme="dark"] .P{background:#3d3412;color:#ffec99}:root[data-theme="dark"] .N{background:#3f1d1d;color:#ffc9c9}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:120px}
+.bar span{display:block;height:100%;background:var(--accent)}
+input,select{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;margin-bottom:12px;min-width:240px}
+.btns button{font:inherit;font-size:12px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 9px;margin-right:4px;cursor:pointer}
+.btns button:hover{border-color:var(--accent)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:16px}
+.panel h3{margin:0 0 8px;font-size:16px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.flag{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.score{font-weight:600}
+.hi{color:var(--bad)}.md{color:var(--warn)}.lo{color:var(--ok)}
+ul{margin:6px 0 0;padding-left:18px}
+a{color:var(--accent)}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+@media (max-width:720px){.app{grid-template-columns:1fr}nav{display:flex;flex-wrap:wrap;gap:4px;padding:10px}nav h1{width:100%}nav button{width:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav>
+    <h1>Skill-Gap Admin</h1>
+    <div id="navs"></div>
+  </nav>
+  <main id="view"></main>
+</div>
+
+<script>
+const SKILLS=["API development","SQL","Automated testing","Deployment","Version control"];
+const LABEL={D:"Demonstrated",P:"Partial",N:"Not demonstrated"};
+
+
+
+const students=[
+ {id:"S-2101",name:"Aarav Deshmukh",repo:"aarav-deshmukh/ledger-api",cohort:"BE CSE 2026",lastScan:"2026-10-14",
+  skills:{"API development":"D","SQL":"D","Automated testing":"P","Deployment":"N","Version control":"D"},
+  evidence:{"API development":"src/routes/accounts.js, src/routes/transactions.js (6 endpoints, Express)",
+    "SQL":"db/schema.sql, repo/transactionRepo.js (parameterized queries, 2 migrations)",
+    "Automated testing":"tests/ (4 Jest files), no CI run configured",
+    "Version control":"118 commits over 7 months, feature branches merged via PR",
+    "Deployment":"No Dockerfile or pipeline config found"}},
+ {id:"S-2102",name:"Sneha Iyer",repo:"sneha-iyer/campus-events",cohort:"BE CSE 2026",lastScan:"2026-10-12",
+  skills:{"API development":"D","SQL":"P","Automated testing":"D","Deployment":"D","Version control":"D"},
+  evidence:{"API development":"api/controllers/*.py (REST, input validation)",
+    "SQL":"ORM models only, no hand-written queries found",
+    "Automated testing":"tests/ (11 pytest files, run in CI)",
+    "Deployment":".github/workflows/deploy.yml (Render), render.yaml",
+    "Version control":"87 commits, 9 merged pull requests"}},
+ {id:"S-2103",name:"Rahul Mehta",repo:"rahul-mehta/flask-inventory",cohort:"BE CSE 2026",lastScan:"2026-10-13",
+  skills:{"API development":"P","SQL":"N","Automated testing":"N","Deployment":"N","Version control":"P"},
+  evidence:{"API development":"app.py (9 route decorators, no blueprints or separation of layers)",
+    "Version control":"14 commits, last activity 2026-08-02"}},
+ {id:"S-2104",name:"Priya Nair",repo:"priya-nair/hospital-booking",cohort:"MCA 2026",lastScan:"2026-10-16",
+  skills:{"API development":"D","SQL":"D","Automated testing":"P","Deployment":"D","Version control":"D"},
+  evidence:{"API development":"src/main/java/.../BookingController.java (Spring Boot REST)",
+    "SQL":"schema.sql, JPA repositories with custom @Query methods",
+    "Automated testing":"2 JUnit test classes, no coverage config",
+    "Deployment":"render.yaml, Dockerfile",
+    "Version control":"203 commits, 22 merged pull requests"}},
+ {id:"S-2105",name:"Kunal Joshi",repo:"kunal-joshi/chat-service",cohort:"MCA 2026",lastScan:"2026-10-16",
+  skills:{"API development":"D","SQL":"P","Automated testing":"D","Deployment":"P","Version control":"D"},
+  evidence:{"API development":"src/main/java/.../MessageController.java (WebSocket and REST)",
+    "SQL":"JPA entities only, no native queries found",
+    "Automated testing":"22 JUnit 5 tests across service and controller layers",
+    "Deployment":"Dockerfile, docker-compose.yml, no pipeline config",
+    "Version control":"64 commits, 5 pull requests"}},
+ {id:"S-2106",name:"Meera Pillai",repo:"meera-pillai/student-portal",cohort:"BE CSE 2026",lastScan:"2026-10-16",
+  skills:{"API development":"P","SQL":"D","Automated testing":"N","Deployment":"P","Version control":"P"},
+  evidence:{"API development":"views.py with function-based handlers, no serializers",
+    "SQL":"repo/queries.py (parameterized), db/migrations/ (3 files)",
+    "Deployment":"Dockerfile present, never built in CI",
+    "Version control":"31 commits, mostly on main branch"}},
+ {id:"S-2107",name:"Vikram Rao",repo:"vikram-rao/payroll-tool",cohort:"MCA 2026",lastScan:"2026-10-11",
+  skills:{"API development":"D","SQL":"P","Automated testing":"N","Deployment":"N","Version control":"D"},
+  evidence:{"API development":"Express routes in server/routes/ (5 files)",
+    "SQL":"raw string concatenation in 1 file (possible injection risk)",
+    "Version control":"46 commits, 4 branches"}},
+ {id:"S-2108",name:"Ananya Kulkarni",repo:"ananya-k/library-api",cohort:"BE CSE 2026",lastScan:"2026-10-15",
+  skills:{"API development":"D","SQL":"D","Automated testing":"D","Deployment":"P","Version control":"D"},
+  evidence:{"API development":"routes/books.js, routes/members.js (Express, middleware)",
+    "SQL":"db/queries/*.sql, prepared statements in repo layer",
+    "Automated testing":"tests/integration/ (186 lines added 2026-10-15)",
+    "Deployment":"Dockerfile, no pipeline config",
+    "Version control":"72 commits, 7 merged pull requests"}}
+];
+
+const jobs=[
+ {title:"Backend Engineering Intern",company:"Series B fintech (Bengaluru), sample posting",location:"Bengaluru, hybrid",source:"[replace with real posting URL]",retrieved:"2026-10-12",
+  required:["API development","SQL","Automated testing","Deployment","Version control"]},
+ {title:"Software Engineer Intern (Java / Spring)",company:"Product company (Pune), sample posting",location:"Pune, on-site",source:"[replace with real posting URL]",retrieved:"2026-10-10",
+  required:["API development","SQL","Automated testing","Version control"]},
+ {title:"Full-Stack Developer Intern",company:"Early-stage startup (Mumbai), sample posting",location:"Mumbai, remote-friendly",source:"[replace with real posting URL]",retrieved:"2026-10-09",
+  required:["API development","Deployment","Version control"]},
+ {title:"Data Engineering Intern",company:"Analytics firm (Hyderabad), sample posting",location:"Hyderabad, on-site",source:"[replace with real posting URL]",retrieved:"2026-10-08",
+  required:["SQL","Automated testing","Version control"]}
+];
+
+const events=[
+ {time:"2026-10-16 21:47",student:"Kunal Joshi",repo:"kunal-joshi/chat-service",commit:"3c9e1b7",change:"Added Dockerfile and docker-compose.yml",reassessed:["Deployment"],status:"Reassessed"},
+ {time:"2026-10-16 09:12",student:"Meera Pillai",repo:"meera-pillai/student-portal",commit:"a41f9e2",change:"Added SQL queries in repo layer (+211 lines)",reassessed:["SQL"],status:"Reassessed"},
+ {time:"2026-10-15 18:40",student:"Ananya Kulkarni",repo:"ananya-k/library-api",commit:"7bc03d1",change:"Added tests/integration/ (+186 lines)",reassessed:["Automated testing"],status:"Reassessed"},
+ {time:"2026-10-15 11:05",student:"Vikram Rao",repo:"vikram-rao/payroll-tool",commit:"c90e4aa",change:"README update only",reassessed:[],status:"No skill change"},
+ {time:"2026-10-14 22:31",student:"Aarav Deshmukh",repo:"aarav-deshmukh/ledger-api",commit:"e15a7d0",change:"Merged PR #14: pagination on /transactions",reassessed:[],status:"No skill change"},
+ {time:"2026-10-13 16:20",student:"Rahul Mehta",repo:"rahul-mehta/flask-inventory",commit:"5d2b8f1",change:"Added requirements.txt and README",reassessed:[],status:"No skill change"},
+ {time:"2026-10-12 10:02",student:"Sneha Iyer",repo:"sneha-iyer/campus-events",commit:"9f04c6e",change:"Added Render deploy workflow",reassessed:["Deployment"],status:"Reassessed"}
+];
+
+const flags=[
+ {id:"F-301",student:"Vikram Rao",score:64,signals:["20+ commits within 3 hours on 2026-09-28, after a 34-day gap","Single commit adds 880 lines across 7 files"],status:"Open"},
+ {id:"F-302",student:"Meera Pillai",score:41,signals:["Two commits of 300+ lines each, 2 days apart, after a 26-day gap"],status:"Open"},
+ {id:"F-303",student:"Kunal Joshi",score:35,signals:["22 tests added in one commit alongside 40 new source lines"],status:"Escalated"},
+ {id:"F-304",student:"Rahul Mehta",score:22,signals:["Commit cadence irregular, within the range seen in student projects"],status:"Open"},
+ {id:"F-305",student:"Aarav Deshmukh",score:12,signals:["Steady commit cadence over 7 months"],status:"Cleared"}
+];
+
+// Assistant chat state
+const chatLog=[];
+let chatBusy=false;
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const chip=(skill,st)=>`<span class="chip ${st}">${esc(skill)}: ${LABEL[st]}</span>`;
+const pct=s=>Math.round(100*Object.values(s.skills).filter(v=>v==="D").length/SKILLS.length);
+const scoreCls=n=>n>=60?"hi":n>=30?"md":"lo";
+
+const views={
+ overview(){
+  const avg=Math.round(students.reduce((a,s)=>a+pct(s),0)/students.length);
+  const open=flags.filter(f=>f.status==="Open").length;
+  const rows=SKILLS.map(k=>{
+    const c={D:0,P:0,N:0};students.forEach(s=>c[s.skills[k]]++);
+    const p=Math.round(100*c.D/students.length);
+    return `<tr><td>${esc(k)}</td><td>${c.D}</td><td>${c.P}</td><td>${c.N}</td><td><div class="bar"><span style="width:${p}%"></span></div></td></tr>`;
+  }).join("");
+  return `<h2>Overview</h2><div class="sub">Cohort skill coverage, based on GitHub evidence in the analyzed scope</div>
+  <div class="note">A missing signal means "not demonstrated in this scope," not proof the student lacks the skill.</div>
+  <div class="cards">
+    <div class="card"><div class="n">${students.length}</div><div class="l">Students tracked</div></div>
+    <div class="card"><div class="n">${avg}%</div><div class="l">Avg. demonstrated coverage</div></div>
+    <div class="card"><div class="n">${events.filter(e=>e.reassessed.length).length}</div><div class="l">Reassessments triggered (recent)</div></div>
+    <div class="card"><div class="n">${open}</div><div class="l">Open authenticity reviews</div></div>
+  </div>
+  <table><thead><tr><th>Skill</th><th>Demonstrated</th><th>Partial</th><th>Not demonstrated</th><th>Coverage</th></tr></thead><tbody>${rows}</tbody></table>`;
+ },
+
+ students(q=""){
+  const list=students.filter(s=>(s.name+s.id+s.cohort).toLowerCase().includes(q.toLowerCase()));
+  const rows=list.map(s=>`<tr class="click" data-id="${s.id}">
+    <td>${esc(s.name)}<div class="mono">${s.id}</div></td><td>${esc(s.cohort)}</td>
+    <td>${SKILLS.map(k=>chip(k,s.skills[k])).join("")}</td>
+    <td><div class="bar"><span style="width:${pct(s)}%"></span></div></td><td>${s.lastScan}</td></tr>`).join("");
+  return `<h2>Students</h2><div class="sub">Click a row for evidence and gaps</div>
+  <input id="q" placeholder="Search name, ID or cohort" value="${esc(q)}">
+  <table><thead><tr><th>Student</th><th>Cohort</th><th>Skills</th><th>Coverage</th><th>Last scan</th></tr></thead><tbody>${rows}</tbody></table>
+  <div id="detail"></div>`;
+ },
+
+ jobs(){
+  return `<h2>Job Requirements</h2><div class="sub">Requirements are compared against each student's repository evidence</div>
+  <div class="note">Replace the bracketed placeholders with real postings. Each entry keeps its source link.</div>
+  <div class="grid2">${jobs.map(j=>`<div class="flag"><strong>${esc(j.title)}</strong> · ${esc(j.company)}
+    <div class="mono">Retrieved ${j.retrieved}</div>
+    <div>Source: <a href="#" onclick="return false">${esc(j.source)}</a></div>
+    <div style="margin-top:8px">${j.required.map(r=>`<span class="chip">${esc(r)}</span>`).join("")}</div></div>`).join("")}</div>`;
+ },
+
+ events(){
+  const rows=events.map(e=>`<tr><td class="mono">${e.time}</td><td>${esc(e.student)}<div class="mono">${esc(e.repo)}@${e.commit}</div></td>
+    <td>${esc(e.change)}</td><td>${e.reassessed.length?e.reassessed.map(esc).join(", "):"—"}</td><td>${esc(e.status)}</td></tr>`).join("");
+  return `<h2>Repository Change Events</h2><div class="sub">Detected commits and the skill assessments they re-ran</div>
+  <table><thead><tr><th>Detected</th><th>Student / repo</th><th>Change</th><th>Reassessed skills</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table>`;
+ },
+
+ auth(){
+  const cards=flags.map(f=>`<div class="flag" id="${f.id}">
+    <div style="display:flex;justify-content:space-between"><strong>${esc(f.student)}</strong>
+    <span class="score ${scoreCls(f.score)}">Signal ${f.score}/100</span></div>
+    <div class="mono">${f.id} · ${esc(f.status)}</div>
+    <ul>${f.signals.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>
+    <div class="btns" style="margin-top:10px">
+      <button data-flag="${f.id}" data-set="Cleared">Clear</button>
+      <button data-flag="${f.id}" data-set="Escalated">Escalate to reviewer</button>
+      <button data-flag="${f.id}" data-set="Open">Reopen</button></div></div>`).join("");
+  return `<h2>Authenticity Review</h2><div class="sub">Signals prompt human review. They are not a verdict.</div>
+  <div class="note">Signals include commit timing, large single-commit additions, and style variation. Check each one against the student's walkthrough or interview before acting. Scores only rank which reviews to look at first.</div>
+  <div class="grid2">${cards}</div>`;
+ },
+
+ assistant(){
+  const log=chatLog.map(m=>`<div style="margin:8px 0"><strong>${m.role==="user"?"You":"Assistant"}:</strong> <span style="white-space:pre-wrap">${esc(m.text)}</span></div>`).join("")
+    || `<span class="mono">No messages yet. Try: "Which students lack SQL evidence?"</span>`;
+  return `<h2>Assistant</h2><div class="sub">Answers come only from this dashboard's data. It cannot change records.</div>
+  <div class="panel" id="chat-log" style="min-height:260px;max-height:55vh;overflow-y:auto">${log}${chatBusy?'<div class="mono">Thinking…</div>':""}</div>
+  <div class="btns" style="display:flex;gap:8px;margin-top:12px">
+    <input id="chat-in" placeholder="Ask a question…" style="flex:1;min-width:0;margin-bottom:0">
+    <button id="chat-send">Send</button></div>`;
+ },
+
+ settings(){
+  return `<h2>Settings</h2><div class="sub">Integration and policy configuration (read-only in this prototype)</div>
+  <table><tbody>
+   <tr><td>Change detection</td><td>Polling every 15 min (GitHub REST API). Webhook mode available.</td></tr>
+   <tr><td>Analyzed scope</td><td>Default branch, last 12 months, public + granted private repos</td></tr>
+   <tr><td>Evidence rule</td><td>Each skill cites files or commits. No evidence = "Not demonstrated in this scope."</td></tr>
+   <tr><td>Authenticity review</td><td>Human reviewer required before any flag is shared with a student</td></tr>
+   <tr><td>Job sources</td><td>Public postings, stored with URL and retrieval date</td></tr>
+   <tr><td>LLM provider</td><td>Groq, configured with GROQ_API_KEY and GROQ_MODEL on the server</td></tr>
+  </tbody></table>`;
+ }
+};
+
+const order=[["overview","Overview",()=>students.length],["students","Students",()=>students.length],["jobs","Job requirements",()=>jobs.length],["events","Change events",()=>events.length],["auth","Authenticity",()=>flags.filter(f=>f.status==="Open").length],["assistant","Assistant",null],["settings","Settings",null]];
+
+let current="overview";
+
+function nav(){
+  $("#navs").innerHTML=order.map(([id,label,cnt])=>`<button data-v="${id}" class="${id===current?"on":""}"><span>${label}</span>${cnt?`<span class="count">${cnt()}</span>`:""}</button>`).join("");
+}
+
+function render(){
+  nav();
+  $("#view").innerHTML=views[current]();
+}
+
+function buildContext(){
+  const skillCounts=SKILLS.map(k=>{
+    const c={demonstrated:0,partial:0,notDemonstrated:0};
+    students.forEach(s=>{
+      if(s.skills[k]==="D") c.demonstrated++;
+      else if(s.skills[k]==="P") c.partial++;
+      else c.notDemonstrated++;
+    });
+    return {skill:k,...c};
+  });
+  return {
+    totalStudents: students.length,
+    candidates: students.map(s=>({id:s.id,cohort:s.cohort,skills:s.skills})),
+    skillCounts,
+    jobRoles: jobs.map(j=>({title:j.title,required:j.required})),
+    recentChangeEvents: events.length,
+    openAuthenticityReviews: flags.filter(f=>f.status==="Open").length
+  };
+}
+
+
+function showStudent(id){
+  const s=students.find(x=>x.id===id);
+  const detail=$("#detail");
+  if(!s||!detail) return;
+  const rows=SKILLS.map(k=>`<tr><td>${esc(k)}</td>
+    <td><span class="chip ${s.skills[k]}">${LABEL[s.skills[k]]}</span></td>
+    <td>${esc(s.evidence[k]||"No evidence in analyzed scope")}</td></tr>`).join("");
+  const gaps=SKILLS.filter(k=>s.skills[k]!=="D");
+  detail.innerHTML=`<div class="panel"><h3>${esc(s.name)} · ${s.id}</h3>
+    <div class="mono">${esc(s.repo||"no repo linked")} · last scanned ${esc(s.lastScan)}</div>
+    <div class="btns" style="margin:10px 0">
+      <button data-ai="${s.id}">Run AI assessment</button>
+      <span id="ai-status" class="mono"></span></div>
+    <table><thead><tr><th>Skill</th><th>Status</th><th>Evidence (files / reason)</th></tr></thead><tbody>${rows}</tbody></table>
+    <p><strong>Gaps:</strong> ${gaps.length?gaps.map(esc).join(", "):"None in this scope"}</p></div>`;
+}
+
+async function runAI(id){
+  const s=students.find(x=>x.id===id);
+  if(!s) return;
+  const setStatus=t=>{const el=$("#ai-status"); if(el) el.textContent=t;};
+  if(!s.repo||s.repo.startsWith("your-github-user")){ setStatus("Set a real repo for this student first."); return; }
+  setStatus("Assessing… (reads up to 12 files)");
+  const [owner,repo]=s.repo.split("/");
+  try{
+    const r=await fetch("/api/assess",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({owner,repo,requirements:jobs.map(j=>({title:j.title,required:j.required}))})
+    });
+    const data=await r.json();
+    if(!r.ok){ setStatus(data.error); return; }
+    SKILLS.forEach(k=>{
+      const a=data.skills[k];
+      s.skills[k]=a.status;
+      s.evidence[k]=[a.evidence.join(", "), a.reason].filter(Boolean).join(" — ");
+    });
+    s.lastScan=data.assessedAt.slice(0,10);
+    s.commit=data.commit;
+    current="students";
+    render();
+    showStudent(id);
+  }catch(e){
+    setStatus("Network error: "+e.message);
+  }
+}
+
+// Assistant
+function buildContext(){
+  return {
+    students: students.map(s=>({id:s.id,name:s.name,cohort:s.cohort,lastScan:s.lastScan,skills:s.skills,evidence:s.evidence})),
+    jobs,
+    events,
+    authenticityFlags: flags
+  };
+}
+
+async function sendChat(){
+  const inp=$("#chat-in");
+  const q=inp?inp.value.trim():"";
+  if(!q||chatBusy) return;
+  const history=chatLog.slice(-6);
+  chatLog.push({role:"user",text:q});
+  chatBusy=true;
+  render();
+  try{
+    const r=await fetch("/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        question:q,
+        history,
+        context:buildContext(),
+        candidates:students.map(s=>({id:s.id,repo:s.repo}))
+      })
+        });
+    const data=await r.json();
+    chatLog.push({role:"assistant",text:r.ok?data.answer:"Error: "+data.error});
+  }catch(e){
+    chatLog.push({role:"assistant",text:"Network error: "+e.message});
+  }finally{
+    chatBusy=false;
+    render();
+    const log=$("#chat-log"); if(log) log.scrollTop=log.scrollHeight;
+    $("#chat-in")?.focus();
+  }
+}
+
+// Event wiring
+document.addEventListener("click",e=>{
+  const nb=e.target.closest("nav button");
+  if(nb){current=nb.dataset.v;render();return;}
+  if(e.target.closest("#chat-send")){ sendChat(); return; }
+  const ai=e.target.closest("[data-ai]");
+  if(ai){ runAI(ai.dataset.ai); return; }
+  const tr=e.target.closest("tr.click");
+  if(tr){showStudent(tr.dataset.id);return;}
+  const fb=e.target.closest("[data-flag]");
+  if(fb){
+    const f=flags.find(x=>x.id===fb.dataset.flag);
+    if(f){ f.status=fb.dataset.set; render(); }
+  }
+});
+
+document.addEventListener("input",e=>{
+  if(e.target.id==="q"){
+    const pos=e.target.selectionStart;
+    $("#view").innerHTML=views.students(e.target.value);
+    const q=$("#q");q.focus();q.setSelectionRange(pos,pos);
+  }
+});
+
+document.addEventListener("keydown",e=>{
+  if(e.target.id==="chat-in" && e.key==="Enter" && !e.shiftKey){
+    e.preventDefault();
+    sendChat();
+  }
+});
+
+render();
+</script>
+</body>
+</html>

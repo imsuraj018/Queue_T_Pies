@@ -1,0 +1,10 @@
+{
+  "name": "skill-gap-admin",
+  "version": "1.0.0",
+  "description": "Institute admin for GitHub-based skill-gap assessment with Claude",
+  "type": "module",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.19.2" }
+}
